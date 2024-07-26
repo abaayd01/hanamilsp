@@ -210,6 +210,16 @@ func (e ErrorLineOutOfDocumentRange) Error() string {
 	return fmt.Sprintf("line '%d' does not exist in document with uri: %s", e.line, e.uri)
 }
 
+type ErrorCouldNotParseSymbolAndMethodName struct {
+	uri     string
+	line    int
+	rawLine string
+}
+
+func (e ErrorCouldNotParseSymbolAndMethodName) Error() string {
+	return fmt.Sprintf("could not parse out line '%d' in document with uri: %s\nrawLine: %s", e.line, e.uri, e.rawLine)
+}
+
 func (h *Handler) handleTextDocumentDefinition(request lsp.DefinitionRequest) (lsp.DefinitionResponse, error) {
 	uri := request.Params.TextDocument.URI
 	document, ok := h.State.Documents[uri]
@@ -232,64 +242,18 @@ func (h *Handler) handleTextDocumentDefinition(request lsp.DefinitionRequest) (l
 
 	h.Logger.Println("symbolName:", symbolName)
 	h.Logger.Println("methodName:", methodName)
-	if symbolName != "" && methodName != "" {
-		depsLineNum := GetIncludeDepsLine(document, symbolName)
-		h.Logger.Println("depsLineNum:", depsLineNum)
-		if depsLineNum < 0 {
-			h.Logger.Println("depsLineNum < 0")
-			return lsp.DefinitionResponse{}, errors.New(fmt.Sprintf("no match found for '%s' in 'Deps' include list", symbolName))
-		}
 
-		depsLine := lines[depsLineNum]
-		h.Logger.Printf("depsLine: %s", depsLine)
-
-		destinationURI, err := GetDefinitionURI(
-			depsLine,
-			uri,
-			string(h.State.RootURI),
-		)
-
-		h.Logger.Println("destinationURI: ", destinationURI)
-
-		if err != nil {
-			h.Logger.Println("err: ", err)
-			return lsp.DefinitionResponse{}, err
-		}
-
-		_, err = StatURI(destinationURI)
-
-		if err != nil {
-			h.Logger.Println("err: ", err)
-			return lsp.DefinitionResponse{}, err
-		}
-
-		pos, err := GetPositionForMethodInFile(h.Logger, destinationURI, methodName)
-		h.Logger.Println("err GetLineNumForMethodInFile", err)
-		h.Logger.Println("pos:", pos)
-
-		return lsp.DefinitionResponse{
-			Response: lsp.Response{
-				RPC: "2.0",
-				ID:  &request.ID,
-			},
-			Result: lsp.Location{
-				URI:   destinationURI,
-				Range: analysis.LineRange(pos.Line, pos.Character, pos.Character),
-			},
-		}, nil
+	if symbolName == "" && methodName == "" {
+		return lsp.DefinitionResponse{}, ErrorCouldNotParseSymbolAndMethodName{uri: uri, line: curLineNum}
 	}
 
-	symbolName = GetSymbolNameToLookup(currentLine, request.Params.Position)
-	h.Logger.Println("symbolName: ", symbolName)
-
-	depsLineNum := GetIncludeDepsLine(document, symbolName)
-	h.Logger.Println("depsLineNum:", depsLineNum)
-	if depsLineNum < 0 {
-		h.Logger.Println("depsLineNum < 0")
+	depsLine := GetIncludeDepsLine(document, symbolName)
+	h.Logger.Println("depsLineNum:", depsLine)
+	if depsLine == "" {
+		h.Logger.Println("depsLineNum == \"\"")
 		return lsp.DefinitionResponse{}, errors.New(fmt.Sprintf("no match found for '%s' in 'Deps' include list", symbolName))
 	}
 
-	depsLine := lines[depsLineNum]
 	h.Logger.Printf("depsLine: %s", depsLine)
 
 	destinationURI, err := GetDefinitionURI(
@@ -312,6 +276,10 @@ func (h *Handler) handleTextDocumentDefinition(request lsp.DefinitionRequest) (l
 		return lsp.DefinitionResponse{}, err
 	}
 
+	pos, err := GetPositionForMethodInFile(h.Logger, destinationURI, methodName)
+	h.Logger.Println("err GetLineNumForMethodInFile", err)
+	h.Logger.Println("pos:", pos)
+
 	return lsp.DefinitionResponse{
 		Response: lsp.Response{
 			RPC: "2.0",
@@ -319,12 +287,12 @@ func (h *Handler) handleTextDocumentDefinition(request lsp.DefinitionRequest) (l
 		},
 		Result: lsp.Location{
 			URI:   destinationURI,
-			Range: analysis.LineRange(0, 0, 0),
+			Range: analysis.LineRange(pos.Line, pos.Character, pos.Character),
 		},
 	}, nil
 }
 
-func GetIncludeDepsLine(document string, symbolName string) int {
+func GetIncludeDepsLine(document string, symbolName string) string {
 	parser := sitter.NewParser()
 	lang := ruby.GetLanguage()
 	parser.SetLanguage(lang)
@@ -342,8 +310,11 @@ func GetIncludeDepsLine(document string, symbolName string) int {
 	  arguments: (argument_list
 		       (element_reference
 			 object: (constant) @n_deps (#eq? @n_deps "Deps")
-			 (string (string_content) @n_dep (#match? @n_dep ".*%s")))))
-	`, symbolName)
+			 [(string (string_content) @n_dep (#match? @n_dep "%s"))
+			  (pair
+			    key: (hash_key_symbol) @k (#match? @k "%s")
+			    value: (string (string_content) @k_dep))])))
+	`, symbolName, symbolName)
 
 	q, _ := sitter.NewQuery([]byte(p), lang)
 	qc := sitter.NewQueryCursor()
@@ -359,18 +330,17 @@ func GetIncludeDepsLine(document string, symbolName string) int {
 
 		m = qc.FilterPredicates(m, []byte(document))
 		for _, c := range m.Captures {
-			if c.Index == 2 {
+			if c.Index == 2 || c.Index == 4 {
 				capturedNode = c.Node
 			}
 		}
 	}
 
 	if capturedNode == nil {
-		return -1
+		return ""
 	}
 
-	row := capturedNode.StartPoint().Row
-	return int(row)
+	return capturedNode.Content([]byte(document))
 }
 
 func GetSymbolNameToLookup(

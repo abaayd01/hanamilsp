@@ -164,14 +164,26 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 			Err:             ErrorLineOutOfDocumentRange{uri: currentURI, line: 9999},
 		},
 		{
+			Name:            "ErrorCouldNotParseSymbolAndMethodName",
+			CurrentURI:      currentURI,
+			CurrentPosition: lsp.Position{Line: 74, Character: 23},
+			Err:             ErrorCouldNotParseSymbolAndMethodName{uri: currentURI, line: 74, rawLine: ""},
+		},
+		{
 			Name:            "returns location of validate_relationships file",
 			CurrentURI:      currentURI,
 			CurrentPosition: lsp.Position{Line: 77, Character: 18},
 			ResponseLocation: lsp.Location{
 				URI: rootURI + "/slices/domain/operations/commands/services/validate_relationships.rb",
 				Range: lsp.Range{
-					Start: lsp.Position{},
-					End:   lsp.Position{},
+					Start: lsp.Position{
+						Line:      13,
+						Character: 14,
+					},
+					End: lsp.Position{
+						Line:      13,
+						Character: 14,
+					},
 				},
 			},
 		},
@@ -182,8 +194,32 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 			ResponseLocation: lsp.Location{
 				URI: rootURI + "/slices/domain/operations/commands/services/validate_relationships.rb",
 				Range: lsp.Range{
-					Start: lsp.Position{},
-					End:   lsp.Position{},
+					Start: lsp.Position{
+						Line:      13,
+						Character: 14,
+					},
+					End: lsp.Position{
+						Line:      13,
+						Character: 14,
+					},
+				},
+			},
+		},
+		{
+			Name:            "returns location of an aliased Dep correctly (apply_visibility)",
+			CurrentURI:      currentURI,
+			CurrentPosition: lsp.Position{Line: 121, Character: 41},
+			ResponseLocation: lsp.Location{
+				URI: rootURI + "/slices/domain/operations/commands/services/visibility/apply_and_transform.rb",
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line:      31,
+						Character: 16,
+					},
+					End: lsp.Position{
+						Line:      31,
+						Character: 16,
+					},
 				},
 			},
 		},
