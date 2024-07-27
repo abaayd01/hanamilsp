@@ -235,6 +235,24 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:            "returns location of metadata_repo correctly, when there's multiple method calls on same line",
+			CurrentURI:      currentURI,
+			CurrentPosition: lsp.Position{Line: 102, Character: 30},
+			ResponseLocation: lsp.Location{
+				URI: rootURI + "/slices/domain/repositories/goal_metadata_repo.rb",
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line:      3,
+						Character: 10,
+					},
+					End: lsp.Position{
+						Line:      3,
+						Character: 10,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

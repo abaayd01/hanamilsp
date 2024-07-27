@@ -428,7 +428,16 @@ func GetSymbolAndMethodNameToLookup(
 			return sym, method
 		}
 
-		sym, method = m.Captures[0].Node.Content([]byte(line)), m.Captures[1].Node.Content([]byte(line))
+		receiver := m.Captures[0].Node
+		rangeReceiver := receiver.Range()
+
+		methodNode := m.Captures[1].Node
+		rangeMethod := methodNode.Range()
+
+		if position.Character >= int(rangeReceiver.StartPoint.Column) && position.Character <= int(rangeMethod.EndPoint.Column) {
+			sym = receiver.Content([]byte(line))
+			method = methodNode.Content([]byte(line))
+		}
 	}
 
 	return sym, method
