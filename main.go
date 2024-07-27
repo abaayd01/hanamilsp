@@ -234,10 +234,6 @@ func (h *Handler) handleTextDocumentDefinition(request lsp.DefinitionRequest) (l
 	}
 	currentLine := lines[curLineNum]
 
-	// ------
-	// todo: attempt to branch here into sym and method name logic
-	// if no sym and method name, fallback to the current logic
-	// ------
 	symbolName, methodName := GetSymbolAndMethodNameToLookup(currentLine, request.Params.Position)
 
 	h.Logger.Println("symbolName:", symbolName)
@@ -492,17 +488,31 @@ func GetPositionForMethodInFile(logger *log.Logger, uri string, methodName strin
 	return pos, nil
 }
 
+var SliceNames = map[string]bool{
+	"domain":         true,
+	"collaborations": true,
+}
+
 func GetDefinitionURI(currentLine string, currentURI string, rootURI string) (string, error) {
 	trimmedLine := strings.Trim(currentLine, " \",")
-	destURIExtension := strings.Replace(trimmedLine, ".", "/", -1) + ".rb"
 
-	re := regexp.MustCompile(rootURI + `/slices/(\w*)/`)
-	matches := re.FindStringSubmatch(currentURI)
-	if len(matches) < 2 {
-		return "", errors.New("unable to infer current slice name")
+	firstIden, rest, found := strings.Cut(trimmedLine, ".")
+
+	var sliceName string
+	if found && SliceNames[firstIden] {
+		trimmedLine = rest
+		sliceName = firstIden
+	} else {
+		re := regexp.MustCompile(rootURI + `/slices/(\w*)/`)
+		matches := re.FindStringSubmatch(currentURI)
+		if len(matches) < 2 {
+			return "", errors.New("unable to infer current slice name")
+		}
+
+		sliceName = re.FindStringSubmatch(currentURI)[1]
 	}
 
-	sliceName := re.FindStringSubmatch(currentURI)[1]
+	destURIExtension := strings.Replace(trimmedLine, ".", "/", -1) + ".rb"
 
 	return rootURI + "/slices/" + sliceName + "/" + destURIExtension, nil
 }

@@ -184,7 +184,7 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 		{
 			Name:            "returns location of validate_relationships file",
 			CurrentURI:      currentURI,
-			CurrentPosition: lsp.Position{Line: 77, Character: 18},
+			CurrentPosition: lsp.Position{Line: 79, Character: 18},
 			ResponseLocation: lsp.Location{
 				URI: rootURI + "/slices/domain/operations/commands/services/validate_relationships.rb",
 				Range: lsp.Range{
@@ -202,7 +202,7 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 		{
 			Name:            "returns location of the call method in the validate_relationships file",
 			CurrentURI:      currentURI,
-			CurrentPosition: lsp.Position{Line: 77, Character: 41},
+			CurrentPosition: lsp.Position{Line: 79, Character: 41},
 			ResponseLocation: lsp.Location{
 				URI: rootURI + "/slices/domain/operations/commands/services/validate_relationships.rb",
 				Range: lsp.Range{
@@ -220,7 +220,7 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 		{
 			Name:            "returns location of an aliased Dep correctly (apply_visibility)",
 			CurrentURI:      currentURI,
-			CurrentPosition: lsp.Position{Line: 121, Character: 41},
+			CurrentPosition: lsp.Position{Line: 123, Character: 41},
 			ResponseLocation: lsp.Location{
 				URI: rootURI + "/slices/domain/operations/commands/services/visibility/apply_and_transform.rb",
 				Range: lsp.Range{
@@ -238,7 +238,7 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 		{
 			Name:            "returns location of metadata_repo correctly, when there's multiple method calls on same line",
 			CurrentURI:      currentURI,
-			CurrentPosition: lsp.Position{Line: 102, Character: 30},
+			CurrentPosition: lsp.Position{Line: 104, Character: 30},
 			ResponseLocation: lsp.Location{
 				URI: rootURI + "/slices/domain/repositories/goal_metadata_repo.rb",
 				Range: lsp.Range{
@@ -249,6 +249,24 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 					End: lsp.Position{
 						Line:      3,
 						Character: 10,
+					},
+				},
+			},
+		},
+		{
+			Name:            "returns location of get_collaborations correctly, which is in a different slice",
+			CurrentURI:      currentURI,
+			CurrentPosition: lsp.Position{Line: 189, Character: 18},
+			ResponseLocation: lsp.Location{
+				URI: rootURI + "/slices/collaborations/operations/queries/get_collaboration.rb",
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line:      13,
+						Character: 12,
+					},
+					End: lsp.Position{
+						Line:      13,
+						Character: 12,
 					},
 				},
 			},
