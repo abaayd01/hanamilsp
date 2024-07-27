@@ -243,6 +243,10 @@ func (h *Handler) handleTextDocumentDefinition(request lsp.DefinitionRequest) (l
 	h.Logger.Println("symbolName:", symbolName)
 	h.Logger.Println("methodName:", methodName)
 
+	if symbolName == "" {
+		symbolName = GetSymbolNameToLookup(currentLine, request.Params.Position)
+	}
+
 	if symbolName == "" && methodName == "" {
 		return lsp.DefinitionResponse{}, ErrorCouldNotParseSymbolAndMethodName{uri: uri, line: curLineNum}
 	}
@@ -432,6 +436,11 @@ func GetSymbolAndMethodNameToLookup(
 
 func GetPositionForMethodInFile(logger *log.Logger, uri string, methodName string) (lsp.Position, error) {
 	var pos lsp.Position
+
+	if methodName == "" {
+		return pos, nil
+	}
+
 	documentText, err := os.ReadFile(strings.TrimPrefix(uri, "file://"))
 	if err != nil {
 		return pos, fmt.Errorf("error GetLineNumForMethodInFile: %w", err)

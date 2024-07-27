@@ -170,6 +170,18 @@ func TestHandleTextDocumentDefinition(t *testing.T) {
 			Err:             ErrorCouldNotParseSymbolAndMethodName{uri: currentURI, line: 74, rawLine: ""},
 		},
 		{
+			Name:            "returns location of transaction file when called on the Deps line",
+			CurrentURI:      currentURI,
+			CurrentPosition: lsp.Position{Line: 5, Character: 13},
+			ResponseLocation: lsp.Location{
+				URI: rootURI + "/slices/domain/operations/transaction.rb",
+				Range: lsp.Range{
+					Start: lsp.Position{},
+					End:   lsp.Position{},
+				},
+			},
+		},
+		{
 			Name:            "returns location of validate_relationships file",
 			CurrentURI:      currentURI,
 			CurrentPosition: lsp.Position{Line: 77, Character: 18},
